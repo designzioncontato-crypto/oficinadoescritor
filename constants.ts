@@ -19,8 +19,9 @@ export const ARTICLE_CATEGORIES = [
     "Item", 
     "Local", 
     "Organização", 
-    "País", 
+    "País",
+    "Planeta" 
     "Religião", 
-    "Sistema de Magia", 
+    "Poderes/Habilidades", 
     "Tecnologia"
 ];
