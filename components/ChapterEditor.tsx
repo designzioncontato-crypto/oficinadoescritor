@@ -21,19 +21,38 @@ const ChapterEditor: React.FC<ChapterEditorProps> = ({ chapter, onSave, onBack }
 
     const checkActiveFormats = useCallback(() => {
         if (!editorRef.current) return;
-        const isBold = document.queryCommandState('bold');
-        const isItalic = document.queryCommandState('italic');
-        const alignment = document.queryCommandValue('justify');
-        
-        let alignValue = 'justifyLeft'; // default
-        if (alignment === 'center') alignValue = 'justifyCenter';
-        else if (alignment === 'justify') alignValue = 'justifyFull';
+        try {
+            const isBold = document.queryCommandState('bold');
+            const isItalic = document.queryCommandState('italic');
+            const alignment = document.queryCommandValue('justify');
 
-        setActiveFormats({
-            bold: isBold,
-            italic: isItalic,
-            align: alignValue,
-        });
+            let alignValue: string;
+            switch (alignment) {
+                case 'center':
+                    alignValue = 'justifyCenter';
+                    break;
+                case 'justify':
+                    alignValue = 'justifyFull';
+                    break;
+                case 'left':
+                case 'start': // Some browsers might return 'start'
+                    alignValue = 'justifyLeft';
+                    break;
+                default:
+                    alignValue = 'justifyLeft';
+                    break;
+            }
+
+            setActiveFormats({
+                bold: isBold,
+                italic: isItalic,
+                align: alignValue,
+            });
+        } catch (e) {
+            console.error("Error checking command state:", e);
+            // Fallback to a default state in case of an error
+            setActiveFormats({ bold: false, italic: false, align: 'justifyLeft' });
+        }
     }, []);
     
     useEffect(() => {
@@ -62,7 +81,7 @@ const ChapterEditor: React.FC<ChapterEditorProps> = ({ chapter, onSave, onBack }
     };
 
     const applyFormat = (command: string) => {
-        document.execCommand(command, false);
+        document.execCommand(command, false, undefined);
         editorRef.current?.focus();
         checkActiveFormats();
     };
@@ -114,6 +133,7 @@ const ChapterEditor: React.FC<ChapterEditorProps> = ({ chapter, onSave, onBack }
                             onInput={handleContentChange}
                             onKeyUp={checkActiveFormats}
                             onMouseUp={checkActiveFormats}
+                            onClick={checkActiveFormats}
                             contentEditable={true}
                             suppressContentEditableWarning={true}
                             className="w-full h-full border-none outline-none text-base font-serif leading-relaxed focus:ring-0 px-12 sm:px-16 md:px-24 py-8"
