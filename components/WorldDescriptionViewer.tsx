@@ -1,4 +1,5 @@
 
+
 import React from 'react';
 import type { World, Article } from '../types';
 import { PageContainer, PageHeader } from './ui';
@@ -38,7 +39,7 @@ const WorldDescriptionViewer: React.FC<WorldDescriptionViewerProps> = ({ world, 
                 title={<>{world.name} <span className="ml-2 text-base font-normal align-middle bg-gray-700 text-gray-300 px-3 py-1 rounded-full">Sobre o Mundo</span></>}
             />
             <div 
-                className="mt-6 bg-gray-700 p-6 rounded-lg prose prose-invert max-w-none" 
+                className="mt-6 bg-gray-700 p-6 rounded-lg prose prose-invert max-w-none whitespace-pre-wrap" 
                 onClick={handleContentClick} 
                 dangerouslySetInnerHTML={parseAndRenderContent(world.description)}>
             </div>

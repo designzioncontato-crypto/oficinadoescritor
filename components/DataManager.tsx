@@ -1,207 +1,91 @@
-import React, { useState, useCallback } from 'react';
-import type { Character, Plot, World, Project } from '../types';
-import { sanitizeData, SanitizationResult } from '../utils/dataSanitizer';
-import { XIcon, DownloadIcon, UploadIcon } from './icons';
-import { Button } from './ui';
 
-const IMPORT_STORAGE_KEY = 'pending-project-import';
+import React from 'react';
+import type { Character, World, Article } from '../types';
+import { EditIcon } from './icons';
+import { PageContainer, Button, PageHeader } from './ui';
+import { CustomFieldsViewer } from './shared';
 
-interface DataManagerProps {
-    isOpen: boolean;
-    onClose: () => void;
-    currentData: {
-        characters: Character[];
-        plots: Plot[];
-        worlds: World[];
-        projects: Project[];
-    };
+interface CharacterViewerProps {
+    character: Character;
+    onBack: () => void;
+    onEdit: (character: Character) => void;
+    worlds: World[];
+    allArticles: Article[];
+    onNavigate: (article: Article) => void;
 }
 
-type ImportStatus = 'idle' | 'processing' | 'success' | 'error' | 'loading';
+const ViewerField: React.FC<{label: string, value?: string | number}> = ({label, value}) => value ? (
+    <div>
+        <h4 className="font-bold text-gray-200">{label}</h4>
+        <p className="text-gray-400 whitespace-pre-wrap">{value}</p>
+    </div>
+) : null;
 
-const DataManager: React.FC<DataManagerProps> = ({ isOpen, onClose, currentData }) => {
-    const [status, setStatus] = useState<ImportStatus>('idle');
-    const [sanitizationResult, setSanitizationResult] = useState<SanitizationResult | null>(null);
-    const [errorMessage, setErrorMessage] = useState<string>('');
-    const [isDragging, setIsDragging] = useState(false);
-
-    const resetState = useCallback(() => {
-        setStatus('idle');
-        setSanitizationResult(null);
-        setErrorMessage('');
-    }, []);
-
-    const handleClose = () => {
-        resetState();
-        onClose();
-    };
-    
-    const handleExportJson = () => {
-        try {
-            const jsonString = JSON.stringify(currentData, null, 2);
-            const blob = new Blob([jsonString], { type: 'application/json' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = 'oficina-do-escritor_export.json';
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
-        } catch (error) {
-            console.error("Failed to export JSON:", error);
-            alert("Ocorreu um erro ao exportar os dados para JSON.");
-        }
-    };
-
-    const processFile = (file: File) => {
-        if (!file.type.includes('json')) {
-            setErrorMessage("Formato de arquivo inválido. Por favor, selecione um arquivo .JSON.");
-            setStatus('error');
-            return;
-        }
-
-        setStatus('processing');
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            try {
-                const content = e.target?.result as string;
-                const parsedData = JSON.parse(content);
-                const result = sanitizeData(parsedData);
-                setSanitizationResult(result);
-                setStatus('success');
-            } catch (error) {
-                setErrorMessage("Falha ao ler o arquivo. Verifique se o arquivo JSON está formatado corretamente.");
-                setStatus('error');
-                console.error("Import error:", error);
-            }
-        };
-        reader.onerror = () => {
-             setErrorMessage("Ocorreu um erro ao ler o arquivo.");
-             setStatus('error');
-        };
-        reader.readAsText(file);
-    };
-
-    const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-        const file = event.target.files?.[0];
-        if (file) {
-            processFile(file);
-        }
-        event.target.value = ''; // Reset input to allow re-uploading the same file
-    };
-    
-    const handleDrop = (event: React.DragEvent<HTMLLabelElement>) => {
-        event.preventDefault();
-        event.stopPropagation();
-        setIsDragging(false);
-        const file = event.dataTransfer.files?.[0];
-        if (file) {
-            processFile(file);
-        }
-    };
-    
-    const handleDragEvents = (event: React.DragEvent<HTMLLabelElement>) => {
-        event.preventDefault();
-        event.stopPropagation();
-        if (event.type === 'dragenter' || event.type === 'dragover') {
-            setIsDragging(true);
-        } else if (event.type === 'dragleave') {
-            setIsDragging(false);
-        }
-    };
-
-    const handleConfirmImport = () => {
-        if (sanitizationResult) {
-            if (window.confirm("Atenção: Carregar este projeto substituirá todos os dados atuais. A página será recarregada. Deseja continuar?")) {
-                try {
-                    setStatus('loading');
-                    // Save the sanitized data to session storage.
-                    sessionStorage.setItem(IMPORT_STORAGE_KEY, JSON.stringify(sanitizationResult.data));
-                    // Force a page reload. The App component will handle loading from session storage.
-                    window.location.reload();
-                } catch (error) {
-                    console.error("Failed to stage data for import:", error);
-                    setErrorMessage("Ocorreu um erro crítico ao preparar os dados para importação.");
-                    setStatus('error');
-                }
-            }
-        }
-    };
-
-    if (!isOpen) return null;
+const CharacterViewer: React.FC<CharacterViewerProps> = ({ character, onBack, onEdit, worlds, allArticles, onNavigate }) => {
+    const world = character.worldId ? worlds.find(w => w.id === character.worldId) : null;
 
     return (
-        <div className="fixed inset-0 z-[100] bg-gray-900 bg-opacity-95 backdrop-blur-sm flex flex-col animate-fade-in" aria-modal="true" role="dialog">
-            <div className="flex-shrink-0 px-8 py-4 flex justify-between items-center border-b border-gray-700">
-                <h1 className="text-2xl font-bold text-amber-400">Central de Importação e Exportação</h1>
-                <button onClick={handleClose} className="text-gray-400 hover:text-white transition-colors" aria-label="Fechar"><XIcon /></button>
-            </div>
-            <div className="flex-grow p-8 overflow-y-auto grid grid-cols-1 md:grid-cols-2 gap-8">
-                {/* Export Section */}
-                <div className="bg-gray-800 border border-gray-700 rounded-lg p-8 flex flex-col justify-center items-center text-center">
-                    <h2 className="text-3xl font-semibold mb-4 text-white">Exportar Projeto</h2>
-                    <p className="text-gray-400 mb-8 max-w-sm">
-                        Salve uma cópia de segurança de todo o seu trabalho. Um único arquivo .JSON será baixado para o seu computador.
-                    </p>
-                    <Button onClick={handleExportJson} className="w-full max-w-xs">
-                        <DownloadIcon />
-                        Baixar Arquivo de Backup
-                    </Button>
+        <PageContainer>
+            <PageHeader
+                backLink={<button onClick={onBack} className="text-sm text-amber-400 hover:underline">&larr; Voltar para Personagens</button>}
+                title={<>{character.name || "Personagem sem nome"} {world && <span className="ml-2 text-sm font-normal align-middle bg-gray-700 text-gray-300 px-3 py-1 rounded-full">{world.name}</span>}</>}
+                actions={<Button onClick={() => onEdit(character)} variant="secondary"><EditIcon/> Editar</Button>}
+            />
+            
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
+                <div className="bg-gray-700 p-6 rounded-lg space-y-4">
+                    <h3 className="text-xl font-semibold mb-2 text-amber-400">Dados Básicos</h3>
+                    <ViewerField label="Idade" value={character.age} />
+                    <ViewerField label="Aparência" value={character.appearance} />
                 </div>
 
-                {/* Import Section */}
-                <div className="bg-gray-800 border border-gray-700 rounded-lg p-8 flex flex-col justify-center items-center text-center">
-                     <h2 className="text-3xl font-semibold mb-4 text-white">Importar Projeto</h2>
-                     {status === 'idle' && (
-                        <>
-                            <p className="text-gray-400 mb-6 max-w-sm">Arraste e solte um arquivo .JSON ou clique para selecionar.</p>
-                            <label
-                                onDrop={handleDrop}
-                                onDragOver={handleDragEvents}
-                                onDragEnter={handleDragEvents}
-                                onDragLeave={handleDragEvents}
-                                className={`w-full max-w-xs p-10 border-2 border-dashed rounded-lg cursor-pointer transition-colors ${isDragging ? 'border-amber-500 bg-gray-700/50' : 'border-gray-600 hover:border-gray-500'}`}
-                            >
-                                <div className="flex flex-col items-center pointer-events-none">
-                                    <UploadIcon />
-                                    <span className="mt-2 text-sm text-gray-400">Selecionar Arquivo</span>
-                                </div>
-                                <input type="file" accept="application/json" onChange={handleFileChange} className="hidden" />
-                            </label>
-                        </>
-                     )}
-                     {status === 'processing' && <p className="text-amber-400">Analisando arquivo...</p>}
-                     {status === 'loading' && <p className="text-amber-400">Carregando novo projeto...</p>}
-                     {status === 'error' && (
-                        <div className="w-full">
-                            <p className="text-red-400 mb-4">{errorMessage}</p>
-                            <Button onClick={resetState} variant="secondary">Tentar Novamente</Button>
-                        </div>
-                     )}
-                     {status === 'success' && sanitizationResult && (
-                        <div className="w-full flex flex-col items-center gap-4">
-                            <h3 className="text-xl font-bold text-green-400">Arquivo Válido!</h3>
-                             <div className="text-left bg-gray-700 p-4 rounded-md w-full max-w-xs">
-                                <p><strong>Resumo do Projeto:</strong></p>
-                                <ul className="list-disc list-inside text-gray-300">
-                                    <li>Mundos: {sanitizationResult.data.worlds.length}</li>
-                                    <li>Personagens: {sanitizationResult.data.characters.length}</li>
-                                    <li>Enredos: {sanitizationResult.data.plots.length}</li>
-                                    <li>Projetos: {sanitizationResult.data.projects.length}</li>
-                                </ul>
-                                {sanitizationResult.issuesFound > 0 && (
-                                    <p className="text-xs text-amber-400 mt-2">{sanitizationResult.issuesFound} problemas de integridade foram corrigidos.</p>
-                                )}
-                            </div>
-                            <Button onClick={handleConfirmImport} className="w-full max-w-xs">Carregar este Projeto</Button>
-                            <Button onClick={resetState} variant="secondary" className="w-full max-w-xs">Cancelar</Button>
-                        </div>
-                     )}
+                <div className="bg-gray-700 p-6 rounded-lg space-y-4">
+                    <h3 className="text-xl font-semibold mb-2 text-amber-400">Perfil Psicológico</h3>
+                    <ViewerField label="Arquétipo" value={character.archetype} />
+                    <ViewerField label="Personalidade" value={character.personality} />
+                    <ViewerField label="Motivação" value={character.motivation} />
+                    <ViewerField label="Medos" value={character.fear} />
+                    <ViewerField label="Segredos" value={character.secret} />
                 </div>
+                
+                <div className="bg-gray-700 p-6 rounded-lg space-y-4">
+                    <h3 className="text-xl font-semibold mb-2 text-amber-400">Relações e Status</h3>
+                    <ViewerField label="Afiliação e Lealdades" value={character.affiliation} />
+                    <ViewerField label="Status Social e Político" value={character.socialStatus} />
+                    <ViewerField label="Inimigos e Aliados" value={character.enemiesAllies} />
+                </div>
+
+                <div className="bg-gray-700 p-6 rounded-lg space-y-4">
+                    <h3 className="text-xl font-semibold mb-2 text-amber-400">Repertório</h3>
+                    <ViewerField label="Poderes e Habilidades" value={character.powers} />
+                    <ViewerField label="Fraquezas" value={character.weaknesses} />
+                    <ViewerField label="Equipamento" value={character.equipment} />
+                </div>
+
+                {character.backstory && (
+                    <div className="bg-gray-700 p-6 rounded-lg lg:col-span-2">
+                        <h3 className="text-xl font-semibold mb-2 text-amber-400">História Pregressa</h3>
+                        <p className="text-gray-400 whitespace-pre-wrap">{character.backstory}</p>
+                    </div>
+                )}
             </div>
-        </div>
+
+            <CustomFieldsViewer customData={character.customData} allArticles={allArticles} onNavigate={onNavigate} />
+            
+            {character.relatedArticleIds && character.relatedArticleIds.length > 0 && (
+                 <div className="mt-8">
+                    <h3 className="text-xl font-semibold mb-4 text-amber-400">Artigos Relacionados</h3>
+                    <div className="flex flex-wrap gap-3">
+                        {allArticles.filter(a => character.relatedArticleIds.includes(a.id)).map(related => (
+                            <button key={related.id} onClick={() => onNavigate(related)} className="bg-amber-900/50 text-amber-300 px-3 py-1 rounded-full text-sm hover:bg-amber-800/50 transition-colors">
+                                {related.title}
+                            </button>
+                        ))}
+                    </div>
+                </div>
+            )}
+        </PageContainer>
     );
 };
 
-export default DataManager;
+export default CharacterViewer;

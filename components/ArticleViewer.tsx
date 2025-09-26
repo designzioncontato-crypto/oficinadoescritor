@@ -47,7 +47,7 @@ const ArticleViewer: React.FC<ArticleViewerProps> = ({ article, allArticles, all
                 actions={<Button onClick={() => onEdit(article)} variant="secondary"><EditIcon/> Editar</Button>}
             />
             
-            <div className="mt-6 bg-gray-700 p-6 rounded-lg prose prose-invert max-w-none" onClick={handleContentClick} dangerouslySetInnerHTML={parseAndRenderContent(article.content)}></div>
+            <div className="mt-6 bg-gray-700 p-6 rounded-lg prose prose-invert max-w-none whitespace-pre-wrap" onClick={handleContentClick} dangerouslySetInnerHTML={parseAndRenderContent(article.content)}></div>
             
             <CustomFieldsViewer customData={article.customData} allArticles={allArticles} onNavigate={onNavigate} />
 

@@ -160,7 +160,7 @@ export const CustomFieldsViewer: React.FC<CustomFieldsViewerProps> = ({ customDa
                             <div key={field.id}>
                                 <h4 className="font-bold text-gray-200">{field.title}</h4>
                                 <div 
-                                  className="text-gray-400 prose prose-invert max-w-none prose-p:my-1 prose-headings:my-2"
+                                  className="text-gray-100 prose prose-invert max-w-none prose-p:my-1 prose-headings:my-2 whitespace-pre-wrap"
                                   onClick={handleContentClick}
                                   dangerouslySetInnerHTML={parseAndRenderContent(field.value)}
                                 ></div>

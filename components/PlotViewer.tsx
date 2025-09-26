@@ -39,7 +39,7 @@ const PlotViewer: React.FC<PlotViewerProps> = ({ plot, onBack, onEdit, worlds, a
             
             <div className="bg-gray-700 p-6 rounded-lg mt-6">
                 <h3 className="text-xl font-semibold mb-2 text-amber-400">Premissa</h3>
-                <p className="text-lg italic text-gray-300">"{plot.logline || "Nenhuma premissa definida."}"</p>
+                <p className="text-lg italic text-gray-300 whitespace-pre-wrap">"{plot.logline || "Nenhuma premissa definida."}"</p>
             </div>
 
             {!plot.threeActStructureHidden && (
