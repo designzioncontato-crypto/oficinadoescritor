@@ -19,8 +19,11 @@ const ChapterEditor: React.FC<ChapterEditorProps> = ({ chapter, onSave, onBack }
         align: 'justifyLeft',
     });
 
+    // This function is now safer, only running when the editor is focused.
     const checkActiveFormats = useCallback(() => {
-        if (!editorRef.current) return;
+        if (!editorRef.current || document.activeElement !== editorRef.current) {
+            return;
+        }
         try {
             const isBold = document.queryCommandState('bold');
             const isItalic = document.queryCommandState('italic');
@@ -35,7 +38,7 @@ const ChapterEditor: React.FC<ChapterEditorProps> = ({ chapter, onSave, onBack }
                     alignValue = 'justifyFull';
                     break;
                 case 'left':
-                case 'start': // Some browsers might return 'start'
+                case 'start': // Handle browser variations
                     alignValue = 'justifyLeft';
                     break;
                 default:
@@ -50,20 +53,20 @@ const ChapterEditor: React.FC<ChapterEditorProps> = ({ chapter, onSave, onBack }
             });
         } catch (e) {
             console.error("Error checking command state:", e);
-            // Fallback to a default state in case of an error
             setActiveFormats({ bold: false, italic: false, align: 'justifyLeft' });
         }
     }, []);
     
+    // Simplified effect to prevent race conditions on load.
+    // The format check is now handled by user interaction (onFocus).
     useEffect(() => {
         setTitle(chapter.title);
         if (editorRef.current) {
             editorRef.current.innerHTML = chapter.content || '';
             const text = editorRef.current.textContent || '';
             setWordCount(text.trim() ? text.trim().split(/\s+/).filter(Boolean).length : 0);
-            checkActiveFormats();
         }
-    }, [chapter, checkActiveFormats]);
+    }, [chapter]);
 
     const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setTitle(e.target.value);
@@ -80,16 +83,17 @@ const ChapterEditor: React.FC<ChapterEditorProps> = ({ chapter, onSave, onBack }
         onBack();
     };
 
+    // Correctly focuses *before* applying the format.
     const applyFormat = (command: string) => {
-        document.execCommand(command, false, undefined);
         editorRef.current?.focus();
-        checkActiveFormats();
+        document.execCommand(command, false, undefined);
+        checkActiveFormats(); // Re-check state immediately for responsiveness
     };
 
     const FormatButton: React.FC<{ onClick: () => void, children: React.ReactNode, isActive: boolean }> = ({ onClick, children, isActive }) => (
         <button
             type="button"
-            onMouseDown={(e) => e.preventDefault()} // Prevents the editor from losing focus
+            onMouseDown={(e) => e.preventDefault()}
             onClick={onClick}
             className={`p-2 rounded transition-colors ${isActive ? 'bg-amber-600 text-white' : 'text-gray-400 hover:bg-gray-700 hover:text-white'}`}
         >
@@ -131,6 +135,7 @@ const ChapterEditor: React.FC<ChapterEditorProps> = ({ chapter, onSave, onBack }
                         <div
                             ref={editorRef}
                             onInput={handleContentChange}
+                            onFocus={checkActiveFormats}
                             onKeyUp={checkActiveFormats}
                             onMouseUp={checkActiveFormats}
                             onClick={checkActiveFormats}
