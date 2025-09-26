@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import type { Chapter } from '../types';
 import { Button } from './ui';
 
@@ -10,10 +10,18 @@ interface ChapterEditorProps {
 
 const ChapterEditor: React.FC<ChapterEditorProps> = ({ chapter, onSave, onBack }) => {
     const [editedChapter, setEditedChapter] = useState(chapter);
+    const textareaRef = useRef<HTMLTextAreaElement>(null);
 
     useEffect(() => {
         setEditedChapter(chapter);
     }, [chapter]);
+    
+    useEffect(() => {
+        if (textareaRef.current) {
+            textareaRef.current.style.height = 'auto'; // Reset height to allow shrinking
+            textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`;
+        }
+    }, [editedChapter.content]);
 
     const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setEditedChapter(prev => ({ ...prev, title: e.target.value }));
@@ -38,8 +46,8 @@ const ChapterEditor: React.FC<ChapterEditorProps> = ({ chapter, onSave, onBack }
                     Salvar e Fechar
                 </Button>
             </header>
-            <div className="flex-grow overflow-y-auto py-8 px-4">
-                <div className="w-full max-w-4xl min-h-[calc(100vh-150px)] mx-auto p-12 sm:p-16 md:p-24 shadow-2xl bg-white text-gray-900 rounded-sm flex flex-col">
+            <div className="flex-grow py-8 px-4">
+                <div className="w-full max-w-4xl mx-auto p-12 sm:p-16 md:p-24 shadow-2xl bg-white text-gray-900 rounded-sm">
                     <input
                         type="text"
                         value={editedChapter.title || ''}
@@ -48,7 +56,10 @@ const ChapterEditor: React.FC<ChapterEditorProps> = ({ chapter, onSave, onBack }
                         className="w-full block text-center text-3xl md:text-4xl font-bold mb-12 border-none outline-none focus:ring-0 bg-transparent flex-shrink-0"
                     />
                     <textarea
-                        className="flex-grow w-full border-none outline-none text-base font-serif leading-relaxed text-justify bg-transparent resize-none focus:ring-0"
+                        ref={textareaRef}
+                        rows={1}
+                        style={{ overflow: 'hidden' }}
+                        className="w-full border-none outline-none text-base font-serif leading-relaxed text-justify bg-transparent resize-none focus:ring-0"
                         value={editedChapter.content || ''}
                         onChange={handleContentChange}
                         placeholder="Comece a escrever..."
