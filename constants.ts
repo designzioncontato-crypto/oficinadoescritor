@@ -13,7 +13,8 @@ export const ARCHETYPES = [
 export const ARTICLE_CATEGORIES = [
     "Arma/Armadura", 
     "Cidade", 
-    "Criatura", 
+    "Criatura",
+    "Divindade", 
     "Evento Histórico", 
     "Família", 
     "Item", 
