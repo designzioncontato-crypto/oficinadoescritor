@@ -20,7 +20,7 @@ export const ARTICLE_CATEGORIES = [
     "Local", 
     "Organização", 
     "País",
-    "Planeta" 
+    "Planeta", 
     "Religião", 
     "Poderes/Habilidades", 
     "Tecnologia"
