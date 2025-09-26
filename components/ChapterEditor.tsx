@@ -23,16 +23,11 @@ const ChapterEditor: React.FC<ChapterEditorProps> = ({ chapter, onSave, onBack }
         if (!editorRef.current) return;
         const isBold = document.queryCommandState('bold');
         const isItalic = document.queryCommandState('italic');
-        
-        // queryCommandValue('justify') is deprecated but the simplest for this context.
-        // It returns strings like "left", "center", "right", "justify".
         const alignment = document.queryCommandValue('justify');
         
         let alignValue = 'justifyLeft'; // default
         if (alignment === 'center') alignValue = 'justifyCenter';
         else if (alignment === 'justify') alignValue = 'justifyFull';
-        else if (alignment === 'left') alignValue = 'justifyLeft';
-
 
         setActiveFormats({
             bold: isBold,
@@ -67,7 +62,7 @@ const ChapterEditor: React.FC<ChapterEditorProps> = ({ chapter, onSave, onBack }
     };
 
     const applyFormat = (command: string) => {
-        document.execCommand(command, false, undefined);
+        document.execCommand(command, false);
         editorRef.current?.focus();
         checkActiveFormats();
     };
@@ -119,12 +114,11 @@ const ChapterEditor: React.FC<ChapterEditorProps> = ({ chapter, onSave, onBack }
                             onInput={handleContentChange}
                             onKeyUp={checkActiveFormats}
                             onMouseUp={checkActiveFormats}
-                            onClick={checkActiveFormats}
                             contentEditable={true}
                             suppressContentEditableWarning={true}
                             className="w-full h-full border-none outline-none text-base font-serif leading-relaxed focus:ring-0 px-12 sm:px-16 md:px-24 py-8"
                         />
-                        {wordCount === 0 && !editorRef.current?.textContent && (
+                        {wordCount === 0 && (
                             <div
                                 aria-hidden="true"
                                 className="pointer-events-none absolute top-8 left-12 sm:left-16 md:left-24 text-gray-500 text-base font-serif leading-relaxed"
