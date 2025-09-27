@@ -25,5 +25,6 @@ export const ARTICLE_CATEGORIES = [
     "Planeta",
     "Poderes/Habilidades", 
     "Religião", 
-    "Tecnologia"
+    "Tecnologia",
+    "Outros"
 ];
